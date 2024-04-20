@@ -490,7 +490,7 @@ void Controller(void){ // runs at 100 Hz
 }
 
 void Controller_Right(void){ // runs at 100 Hz
-  if(1){
+  if(Mode){
     if((RightDistance>DESIRED)){
       SetPoint = (RightDistance)/2;
     }else{
@@ -524,21 +524,21 @@ void Controller_Right(void){ // runs at 100 Hz
 }
 
 void Pause(void){int i;
-  while(Bump_Read()){ // wait for release
-    Clock_Delay1ms(200); LaunchPad_Output(0); // off
-    Clock_Delay1ms(200); LaunchPad_Output(1); // red
-  }
-  while(Bump_Read()==0){// wait for touch
-    Clock_Delay1ms(100); LaunchPad_Output(0); // off
-    Clock_Delay1ms(100); LaunchPad_Output(3); // red/green
-  }
+//  while(Bump_Read()){ // wait for release
+//    Clock_Delay1ms(200); LaunchPad_Output(0); // off
+//    Clock_Delay1ms(200); LaunchPad_Output(1); // red
+//  }
+//  while(Bump_Read()==0){// wait for touch
+//    Clock_Delay1ms(100); LaunchPad_Output(0); // off
+//    Clock_Delay1ms(100); LaunchPad_Output(3); // red/green
+//  }
   while(Bump_Read()){ // wait for release
     Clock_Delay1ms(100); LaunchPad_Output(0); // off
     Clock_Delay1ms(100); LaunchPad_Output(4); // blue
   }
-  for(i=1000;i>100;i=i-200){
-    Clock_Delay1ms(i); LaunchPad_Output(0); // off
-    Clock_Delay1ms(i); LaunchPad_Output(2); // green
+  for(i=5;i>0;i=i-1){
+    Clock_Delay1ms(50); LaunchPad_Output(0); // off
+    Clock_Delay1ms(50); LaunchPad_Output(2); // green
   }
   // restart Jacki
   UR = UL = PWMNOMINAL;    // reset parameters
@@ -555,7 +555,7 @@ void main(void){ // wallFollow wall following implementation
   Motor_Init();
   LaunchPad_Init(); // built-in switches and LEDs
   Motor_Stop(); // initialize and stop
-  Mode = 0;
+  Mode = 1;
   I2CB1_Init(30); // baud rate = 12MHz/30=400kHz
   Init();
   Clear();
@@ -584,14 +584,14 @@ void main(void){ // wallFollow wall following implementation
   LPF_Init2(100,8);
   LPF_Init3(100,8);
   UR = UL = PWMNOMINAL; //initial power
-  //Pause();
+  Pause();
   EnableInterrupts();
   while(1){
-//    if(Bump_Read()){ // collision
-//      Mode = 0;
-//      Motor_Stop();
-//      Pause();
-//    }
+    if(Bump_Read()){ // collision
+      Mode = 0;
+      Motor_Stop();
+      Pause();
+    }
     if(TxChannel <= 2){ // 0,1,2 means new data
       if(TxChannel==0){
         if(Amplitudes[0] > 1000){
@@ -769,4 +769,3 @@ void main4(void){ // main4 is DFT of left distance
     WaitForInterrupt();
   }
 }
-
