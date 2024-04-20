@@ -1,0 +1,15 @@
+Bluetooth Character Codes:
+G - 
+S - 
+A - 
+B - 
+
+
+
+MQTT Topics & Ideal Messages:
+grootLWall/ - left distance sensor reading as string
+grootCWall/ - center distance sensor reading as string
+grootRWall/ - right distance sensor reading as string
+grootBump/ - send any type of message when the bump sensors are hit
+grootLSpeed/ - left tach reading as a string
+grootRSpeed/ - right tach reading as a string
