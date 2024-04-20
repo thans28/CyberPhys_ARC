@@ -1,0 +1,7 @@
+VM name: cheesehead
+
+Public IP: 52.146.23.32
+Username: headofcheese
+
+Accessing the Node-Red Flow: http://52.146.23.32:1880/
+Accessing the UI: http://52.146.23.32:1880/ui/
