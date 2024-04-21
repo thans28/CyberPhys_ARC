@@ -13,7 +13,7 @@
         }
 
 
-        /* .button {
+        .button {
             text-align: center; 
             place-content: center;
             padding: 15px 32px;
@@ -51,7 +51,7 @@
 
         .button3:hover{
             background-color: #00c79c;
-        } */
+        }
     </style>
 </head>
 <body>
@@ -90,10 +90,11 @@
         async function connect() {
             try {
                 device = await navigator.bluetooth.requestDevice({
-                    filters:[ 
+                    filters:[
+                        {services: [0xFFE0]},
+                        {services: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b']},
                         {name: "KUSHAL"},
-                        {name: "ODAY"}, 
-                        {services: [0xFFE0]}
+                        {name: "ODAY"}
                     ],
                     optionalServices: [0xFFE0]
                 });
