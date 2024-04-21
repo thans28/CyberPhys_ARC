@@ -226,17 +226,24 @@ void main2(void){ // busy-wait implementation
     }
   }
 }
+int BIAS = 1; // 1 = Right, 2 = Left
 
 // calibrated for 500mm track
 // right is raw sensor data from right sensor
 // return calibrated distance from center of Robot to right wall
 int32_t Right(int32_t right){
-  return  (right*(59*right + 7305) + 2348974)/32768;
+    if (BIAS == 1)
+        return  (right*(59*right + 7305) + 2348974)/32768;
+    else
+         return (1247*right)/2048 + 22;
 }
 // left is raw sensor data from left sensor
 // return calibrated distance from center of Robot to left wall
 int32_t Left(int32_t left){
-  return (1247*left)/2048 + 22;
+    if (BIAS == 1)
+        return (1247*left)/2048 + 22;
+    else
+        return  (left*(50*left + 7305) + 2348974)/32768;
 }
 
 void mainUNO(void){ // main3interrupt implementation
@@ -451,8 +458,8 @@ int Program21_1(void){ //Program21_1(void){ // example program 21.1, RSLK1.1
 // assumes track is 500mm
 int32_t Mode = 1; // 0 stop, 1 run
 int32_t Error;
-int32_t Ki=1;  // integral controller gain
-int32_t Kp=4;  // proportional controller gain //was 4
+int32_t Ki=20;  // integral controller gain
+int32_t Kp=25;  // proportional controller gain //was 4
 int32_t UR, UL;  // PWM duty 0 to 14,998
 
 #define TOOCLOSE 200 //was 200
@@ -461,12 +468,12 @@ int32_t SetPoint = 250; // mm //was 250
 int32_t LeftDistance,CenterDistance,RightDistance; // mm
 #define TOOFAR 400 // was 400
 
-#define PWMNOMINAL 5000 // was 2500
-#define SWING 2000 //was 1000
+#define PWMNOMINAL 6000 // was 2500
+#define SWING 1500 //was 1000
 #define PWMMIN (PWMNOMINAL-SWING)
 #define PWMMAX (PWMNOMINAL+SWING)
 void Controller(void){ // runs at 100 Hz
-  if(1){
+  if(Mode){
     if((LeftDistance>DESIRED)&&(RightDistance>DESIRED)){
       SetPoint = (LeftDistance+RightDistance)/2;
     }else{
@@ -477,7 +484,7 @@ void Controller(void){ // runs at 100 Hz
     }else {
       Error = SetPoint-RightDistance;
     }
- //   UR = UR + Ki*Error;      // adjust right motor
+    UR = UR + Ki*Error;      // adjust right motor
     UR = PWMNOMINAL+Kp*Error; // proportional control
     UL = PWMNOMINAL-Kp*Error; // proportional control
     if(UR < (PWMNOMINAL-SWING)) UR = PWMNOMINAL-SWING; // 3,000 to 7,000
@@ -496,14 +503,14 @@ void Controller_Right(void){ // runs at 100 Hz
     }else{
       SetPoint = DESIRED;
     }
-    /*if(LeftDistance < RightDistance ){
+    if(LeftDistance < RightDistance ){
       Error = LeftDistance-SetPoint;
     }else {
       Error = SetPoint-RightDistance;
-    }*/
+    }
 
     Error = SetPoint-RightDistance;
-    //UR = UR + Ki*Error;      // adjust right motor
+    UR = UR + Ki*Error;      // adjust right motor
     UR = PWMNOMINAL+Kp*Error; // proportional control
     UR = UR + Ki*Error;      // adjust right motor
     UL = PWMNOMINAL-Kp*Error; // proportional control
@@ -532,16 +539,24 @@ void Pause(void){int i;
 //    Clock_Delay1ms(100); LaunchPad_Output(0); // off
 //    Clock_Delay1ms(100); LaunchPad_Output(3); // red/green
 //  }
-  while(Bump_Read()){ // wait for release
-    Clock_Delay1ms(100); LaunchPad_Output(0); // off
-    Clock_Delay1ms(100); LaunchPad_Output(4); // blue
-  }
+  uint8_t bumpVal = Bump_Read();
+//  while(Bump_Read()){ // wait for release
+//    Clock_Delay1ms(100); LaunchPad_Output(0); // off
+//    Clock_Delay1ms(100); LaunchPad_Output(4); // blue
+//  }
+
   for(i=5;i>0;i=i-1){
     Clock_Delay1ms(50); LaunchPad_Output(0); // off
     Clock_Delay1ms(50); LaunchPad_Output(2); // green
   }
   // restart Jacki
   UR = UL = PWMNOMINAL;    // reset parameters
+  if (bumpVal <= 0x04)
+      Motor_Backward(UL, 0);
+  else
+      Motor_Backward(0, UR);
+  Clock_Delay1ms(500);
+
   Mode = 1;
 
 }
@@ -584,7 +599,7 @@ void main(void){ // wallFollow wall following implementation
   LPF_Init2(100,8);
   LPF_Init3(100,8);
   UR = UL = PWMNOMINAL; //initial power
-  Pause();
+  //Pause();
   EnableInterrupts();
   while(1){
     if(Bump_Read()){ // collision
@@ -619,7 +634,7 @@ void main(void){ // wallFollow wall following implementation
       OPT3101_StartMeasurementChannel(channel);
       i = i + 1;
     }
-    Controller_Right();
+    Controller();
     if(i >= 100){
       i = 0;
       SetCursor(3, 5);
