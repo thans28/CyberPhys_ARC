@@ -1,8 +1,10 @@
 Bluetooth Character Codes:
-G - 
-S - 
-A - 
-B - 
+G - Go
+S - Stop
+A - Deploy Arms
+B - Boost
+P - SPIN
+PROFILE CODES?
 
 
 
