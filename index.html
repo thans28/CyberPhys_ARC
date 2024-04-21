@@ -92,7 +92,8 @@
                 device = await navigator.bluetooth.requestDevice({
                     filters:[ 
                         {name: "KUSHAL"},
-                        {name: "ODAY"}
+                        {name: "ODAY"}, 
+                        {services: [0xFFE0]}
                     ],
                     optionalServices: [0xFFE0]
                 });
