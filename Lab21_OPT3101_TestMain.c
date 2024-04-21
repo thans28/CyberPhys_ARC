@@ -124,108 +124,108 @@ bool pollDistanceSensor(void){
   return false;
 }
 // SysTick is just for debug profile, it can be removed
-void main1(void){ // interrupt implementation
-  int i = 0;
-  uint32_t channel = 1;
-  DisableInterrupts();
-  Clock_Init48MHz();
-  SysTick->LOAD = 0x00FFFFFF;           // maximum reload value
-  SysTick->CTRL = 0x00000005;           // enable SysTick with no interrupts
-  I2CB1_Init(30); // baud rate = 12MHz/30=400kHz
-  Init();
-  Clear();
-  OutString("OPT3101");
-  SetCursor(0, 1);
-  OutString("Left =");
-  SetCursor(0, 2);
-  OutString("Centr=");
-  SetCursor(0, 3);
-  OutString("Right=");
-  SetCursor(0, 4);
-  OutString("Interrupts");
-  SetCursor(0, 5);
-  OutString("NL=");
-  SetCursor(0, 6);
-  OutString("NC=");
-  SetCursor(0, 7);
-  OutString("NR=");
-  OPT3101_Init();
-  OPT3101_Setup();
-  OPT3101_CalibrateInternalCrosstalk();
-  OPT3101_ArmInterrupts(&TxChannel, Distances, Amplitudes);
-  StartTime = SysTick->VAL;
-  TxChannel = 3;
-  OPT3101_StartMeasurementChannel(channel);
-  LPF_Init(100,32);
-  LPF_Init2(100,32);
-  LPF_Init3(100,32);
-  EnableInterrupts();
-  while(1){
-    if(TxChannel <= 2){ // 0,1,2 means new data
-      TimeToConvert = ((StartTime-SysTick->VAL)&0x00FFFFFF)/48000; // msec
-      StartTime = SysTick->VAL;
-      if(TxChannel==0){
-        FilteredDistances[0] = LPF_Calc(Distances[0]);
-      }else if(TxChannel==1){
-        FilteredDistances[1] = LPF_Calc2(Distances[1]);
-      }else {
-        FilteredDistances[2] = LPF_Calc3(Distances[2]);
-      }
-      SetCursor(6, TxChannel+1);
-      OutUDec(FilteredDistances[TxChannel]);
-      TxChannel = 3; // 3 means no data
-      channel = (channel+1)%3;
-      OPT3101_StartMeasurementChannel(channel);
-      i = i + 1;
-    }
-    if(i >= 300){
-      i = 0;
-      SetCursor(3, 5);
-      OutUDec((uint16_t)Noise());  OutChar(','); OutUDec(Amplitudes[0]);
-      SetCursor(3, 6);
-      OutUDec((uint16_t)Noise2()); OutChar(','); OutUDec(Amplitudes[1]);
-      SetCursor(3, 7);
-      OutUDec((uint16_t)Noise3()); OutChar(','); OutUDec(Amplitudes[2]);
-    }
-    WaitForInterrupt();
-  }
-}
-
-void main2(void){ // busy-wait implementation
-  uint32_t channel = 1;
-  Clock_Init48MHz();
-  SysTick->LOAD = 0x00FFFFFF;           // maximum reload value
-  SysTick->CTRL = 0x00000005;           // enable SysTick with no interrupts
-  I2CB1_Init(30); // baud rate = 12MHz/30=400kHz
-  Init();
-  Clear();
-  OutString("OPT3101");
-  SetCursor(0, 1);
-  OutString("Left =");
-  SetCursor(0, 2);
-  OutString("Centr=");
-  SetCursor(0, 3);
-  OutString("Right=");
-  SetCursor(0, 4);
-  OutString("Busy-wait");
-  OPT3101_Init();
-  OPT3101_Setup();
-  OPT3101_CalibrateInternalCrosstalk();
-  OPT3101_StartMeasurementChannel(channel);
-  StartTime = SysTick->VAL;
-  while(1){
-    if(pollDistanceSensor()){
-      TimeToConvert = ((StartTime-SysTick->VAL)&0x00FFFFFF)/48000; // msec
-      if(TxChannel <= 2){
-        SetCursor(6, TxChannel+1);
-        OutUDec(Distances[TxChannel]);
-      }
-      channel = (channel+1)%3;
-      OPT3101_StartMeasurementChannel(channel);
-      StartTime = SysTick->VAL;
-    }
-  }
-}
+//void main1(void){ // interrupt implementation
+//  int i = 0;
+//  uint32_t channel = 1;
+//  DisableInterrupts();
+//  Clock_Init48MHz();
+//  SysTick->LOAD = 0x00FFFFFF;           // maximum reload value
+//  SysTick->CTRL = 0x00000005;           // enable SysTick with no interrupts
+//  I2CB1_Init(30); // baud rate = 12MHz/30=400kHz
+//  Init();
+//  Clear();
+//  OutString("OPT3101");
+//  SetCursor(0, 1);
+//  OutString("Left =");
+//  SetCursor(0, 2);
+//  OutString("Centr=");
+//  SetCursor(0, 3);
+//  OutString("Right=");
+//  SetCursor(0, 4);
+//  OutString("Interrupts");
+//  SetCursor(0, 5);
+//  OutString("NL=");
+//  SetCursor(0, 6);
+//  OutString("NC=");
+//  SetCursor(0, 7);
+//  OutString("NR=");
+//  OPT3101_Init();
+//  OPT3101_Setup();
+//  OPT3101_CalibrateInternalCrosstalk();
+//  OPT3101_ArmInterrupts(&TxChannel, Distances, Amplitudes);
+//  StartTime = SysTick->VAL;
+//  TxChannel = 3;
+//  OPT3101_StartMeasurementChannel(channel);
+//  LPF_Init(100,32);
+//  LPF_Init2(100,32);
+//  LPF_Init3(100,32);
+//  EnableInterrupts();
+//  while(1){
+//    if(TxChannel <= 2){ // 0,1,2 means new data
+//      TimeToConvert = ((StartTime-SysTick->VAL)&0x00FFFFFF)/48000; // msec
+//      StartTime = SysTick->VAL;
+//      if(TxChannel==0){
+//        FilteredDistances[0] = LPF_Calc(Distances[0]);
+//      }else if(TxChannel==1){
+//        FilteredDistances[1] = LPF_Calc2(Distances[1]);
+//      }else {
+//        FilteredDistances[2] = LPF_Calc3(Distances[2]);
+//      }
+//      SetCursor(6, TxChannel+1);
+//      OutUDec(FilteredDistances[TxChannel]);
+//      TxChannel = 3; // 3 means no data
+//      channel = (channel+1)%3;
+//      OPT3101_StartMeasurementChannel(channel);
+//      i = i + 1;
+//    }
+//    if(i >= 300){
+//      i = 0;
+//      SetCursor(3, 5);
+//      OutUDec((uint16_t)Noise());  OutChar(','); OutUDec(Amplitudes[0]);
+//      SetCursor(3, 6);
+//      OutUDec((uint16_t)Noise2()); OutChar(','); OutUDec(Amplitudes[1]);
+//      SetCursor(3, 7);
+//      OutUDec((uint16_t)Noise3()); OutChar(','); OutUDec(Amplitudes[2]);
+//    }
+//    WaitForInterrupt();
+//  }
+//}
+//
+//void main2(void){ // busy-wait implementation
+//  uint32_t channel = 1;
+//  Clock_Init48MHz();
+//  SysTick->LOAD = 0x00FFFFFF;           // maximum reload value
+//  SysTick->CTRL = 0x00000005;           // enable SysTick with no interrupts
+//  I2CB1_Init(30); // baud rate = 12MHz/30=400kHz
+//  Init();
+//  Clear();
+//  OutString("OPT3101");
+//  SetCursor(0, 1);
+//  OutString("Left =");
+//  SetCursor(0, 2);
+//  OutString("Centr=");
+//  SetCursor(0, 3);
+//  OutString("Right=");
+//  SetCursor(0, 4);
+//  OutString("Busy-wait");
+//  OPT3101_Init();
+//  OPT3101_Setup();
+//  OPT3101_CalibrateInternalCrosstalk();
+//  OPT3101_StartMeasurementChannel(channel);
+//  StartTime = SysTick->VAL;
+//  while(1){
+//    if(pollDistanceSensor()){
+//      TimeToConvert = ((StartTime-SysTick->VAL)&0x00FFFFFF)/48000; // msec
+//      if(TxChannel <= 2){
+//        SetCursor(6, TxChannel+1);
+//        OutUDec(Distances[TxChannel]);
+//      }
+//      channel = (channel+1)%3;
+//      OPT3101_StartMeasurementChannel(channel);
+//      StartTime = SysTick->VAL;
+//    }
+//  }
+//}
 int BIAS = 1; // 1 = Right, 2 = Left
 
 // calibrated for 500mm track
@@ -566,8 +566,10 @@ void main(void){ // wallFollow wall following implementation
   uint32_t channel = 1;
   DisableInterrupts();
   Clock_Init48MHz();
+  //SysTick_Init();
   Bump_Init();
   Motor_Init();
+  UART0_Init();
   LaunchPad_Init(); // built-in switches and LEDs
   Motor_Stop(); // initialize and stop
   Mode = 1;
@@ -601,51 +603,63 @@ void main(void){ // wallFollow wall following implementation
   UR = UL = PWMNOMINAL; //initial power
   //Pause();
   EnableInterrupts();
+
+  char command;
+  char comm = 'S';
+
+
   while(1){
+    command = UART0_InChar();
+    if(command != '0') comm = command;
+
     if(Bump_Read()){ // collision
       Mode = 0;
       Motor_Stop();
       Pause();
     }
-    if(TxChannel <= 2){ // 0,1,2 means new data
-      if(TxChannel==0){
-        if(Amplitudes[0] > 1000){
-          LeftDistance = FilteredDistances[0] = Left(LPF_Calc(Distances[0]));
-        }else{
-          LeftDistance = FilteredDistances[0] = 500;
-        }
-      }else if(TxChannel==1){
-        if(Amplitudes[1] > 1000){
-          CenterDistance = FilteredDistances[1] = LPF_Calc2(Distances[1]);
-        }else{
-          CenterDistance = FilteredDistances[1] = 500;
-        }
-      }else {
-        if(Amplitudes[2] > 1000){
-          RightDistance = FilteredDistances[2] = Right(LPF_Calc3(Distances[2]));
-        }else{
-          RightDistance = FilteredDistances[2] = 500;
-        }
-      }
-      SetCursor(2, TxChannel+1);
-      OutUDec(FilteredDistances[TxChannel]); OutChar(','); OutUDec(Amplitudes[TxChannel]);
-      TxChannel = 3; // 3 means no data
-      channel = (channel+1)%3;
-      OPT3101_StartMeasurementChannel(channel);
-      i = i + 1;
-    }
-    Controller();
-    if(i >= 100){
-      i = 0;
-      SetCursor(3, 5);
-      OutUDec(SetPoint);
-      SetCursor(3, 6);
-      OutSDec(Error);
-      SetCursor(3, 7);
-      OutUDec(UL); OutChar(','); OutUDec(UR);
-    }
 
-    WaitForInterrupt();
+    if(comm == 'S') Motor_Stop();
+    else if(comm == 'G'){
+        if(TxChannel <= 2){ // 0,1,2 means new data
+          if(TxChannel==0){
+            if(Amplitudes[0] > 1000){
+              LeftDistance = FilteredDistances[0] = Left(LPF_Calc(Distances[0]));
+            }else{
+              LeftDistance = FilteredDistances[0] = 500;
+            }
+          }else if(TxChannel==1){
+            if(Amplitudes[1] > 1000){
+              CenterDistance = FilteredDistances[1] = LPF_Calc2(Distances[1]);
+            }else{
+              CenterDistance = FilteredDistances[1] = 500;
+            }
+          }else {
+            if(Amplitudes[2] > 1000){
+              RightDistance = FilteredDistances[2] = Right(LPF_Calc3(Distances[2]));
+            }else{
+              RightDistance = FilteredDistances[2] = 500;
+            }
+          }
+          SetCursor(2, TxChannel+1);
+          OutUDec(FilteredDistances[TxChannel]); OutChar(','); OutUDec(Amplitudes[TxChannel]);
+          TxChannel = 3; // 3 means no data
+          channel = (channel+1)%3;
+          OPT3101_StartMeasurementChannel(channel);
+          i = i + 1;
+        }
+        Controller();
+        if(i >= 100){
+          i = 0;
+          SetCursor(3, 5);
+          OutUDec(SetPoint);
+          SetCursor(3, 6);
+          OutSDec(Error);
+          SetCursor(3, 7);
+          OutUDec(UL); OutChar(','); OutUDec(UR);
+        }
+
+        WaitForInterrupt();
+      }
   }
 }
 // MSP432 memory limited to q=11, N=2048
