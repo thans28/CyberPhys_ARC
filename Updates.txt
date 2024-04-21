@@ -3,4 +3,4 @@ Updates (most recent at the top)
 4/21 - Uploaded BLE UI Website with BLE connectivity and signals and mildly polished UI - Kushal
 4/20 - Added WirelessCommProtocols.txt for Bluetooth and MQTT message encoding standards - Tyler
 4/20 - Uploaded Wall Following Code (May have bump sensors commented out) - Oday
-4/11 - Created repository and added Updates.txt
+4/11 - Created repository and added Updates.txt - Tyler
