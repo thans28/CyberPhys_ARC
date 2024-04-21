@@ -1,5 +1,6 @@
 Updates (most recent at the top)
 --------------------------------
+4/21 - Updated Controller Code now with Bump Added, and Bump Correction (Basic Controller Works) - Oday
 4/21 - Uploaded BLE UI Website with BLE connectivity and signals and mildly polished UI - Kushal
 4/20 - Added WirelessCommProtocols.txt for Bluetooth and MQTT message encoding standards - Tyler
 4/20 - Uploaded Wall Following Code (May have bump sensors commented out) - Oday
