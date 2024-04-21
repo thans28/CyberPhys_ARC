@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racing BLE UI</title>
+    <style>
+        h1 { text-align: center;}
+        p {text-align: center;}
+        div {text-align: center;}
+        body {
+            background-color: #a58a61;
+        }
+
+
+        .button {
+            text-align: center; 
+            place-content: center;
+            padding: 15px 32px;
+            font-size: 24px;
+            width: 75%;
+
+        }
+
+        .buttonC {
+            width: 37.5%;
+            padding: 15px 0px;
+        }
+
+        .button1 {
+            background-color: #34db1e;
+        }
+
+        .button1:hover {
+            background-color: #27a816;
+        }
+
+        .button2 {
+            background-color: #ff0000;
+        }
+
+        .button2:hover{
+            background-color: #b90000;
+        }
+
+        .button3{
+            background-color: #00ffc8;
+        }
+
+        .button3:hover{
+            background-color: #00c79c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cyber Physical Systems Autonomous Racing Challenge</h1>
+    <div>
+    <button onclick="connect()" class="button button1 buttonC">Connect</button>
+    <button onclick="disconnect()" class="button button2 buttonC">Disconnect</button>
+    <br>
+    <br>
+    <button onclick="writeValue(71)" class="button button1">Go</button> <!--G-->
+    <br>
+    <br>
+    <button onclick="writeValue(83)" class="button button2">Stop</button> <!--S-->
+    <br>
+    <br>
+    <button onclick="writeValue(65)" class="button button3">Deploy Arms</button> <!--A-->
+    <br>
+    <br>
+    <button onclick="writeValue(66)" class="button button3">Boost</button> <!--B-->
+    <br>
+    <br>
+    <button class="button button3">SPIN</button> <!--IDK YET-->
+    <br>
+    <br>
+
+
+    </div>
+
+
+    <script>
+        let device;
+        let characteristic;
+
+        // "80a24dae-5984-23fb-b000-c59cc5864427" Oday UUID
+
+        async function connect() {
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters:[ 
+                        {name: "KUSHAL"},
+                        {name: "ODAY"}
+                    ],
+                    optionalServices: [0xFFE0]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(0xFFE0);
+                characteristic = await service.getCharacteristic(0xFFE1);
+
+                // Your code to interact with the characteristic goes here
+                // For example, reading/writing values or listening for notifications
+            } catch (error) {
+                console.error('Error connecting:', error);
+            }
+        }
+
+        function disconnect() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+            }
+        }
+
+        async function writeValue(x) {
+            if(characteristic && device.gatt.connected){            
+                try {
+                    //sleep(100);
+                    await characteristic.writeValue(new Uint8Array([x]));
+                    //sleep(100);
+                    console.log('Value of ' + x + ' written successfully');
+                    // console.log(characteristic.getValue());
+                    
+                } catch (error) {
+                    console.error('Error writing:', error);
+                }
+            }else{
+                console.error('Device not connected or characteristic unavailable');
+            }
+        }
+
+        
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        
+    </script>
+</body>
+</html>
