@@ -1,9 +1,11 @@
 Bluetooth Character Codes:
 G - Go
 S - Stop
-A - Deploy Arms
-B - Boost
-P - SPIN
+C - Chill Profile
+A - Aggressive Profile
+L - Left Bias
+E - Center Bias
+R - Right Bias
 PROFILE CODES?
 
 
