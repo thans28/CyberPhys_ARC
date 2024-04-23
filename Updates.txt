@@ -1,5 +1,6 @@
 Updates (most recent at the top)
 --------------------------------
+4/23 - Uploaded my own project with full integration (Bump (Needs to be counted in the code), WiFi, BLE, Line Detecting, Distance(Need to fix the sma left/right issue) and all include files (ARC.zip) Controller is main priority now - Oday
 4/23 - Uploaded my own project with full integration (Bump, WiFi, BLE, Line Detecting, PID) and all include files (ARC.zip) - Oday
 4/22 - Uploaded my project for full integration & including all files - Tyler
 4/22 - Updated BLE UI for Bluefy Compatibility and Updated Buttons according to rules - Kushal
