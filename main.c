@@ -91,6 +91,10 @@ uint16_t avg(uint16_t *array, int length)
   return (sum/length);
 }
 
+uint32_t max(uint32_t a, uint32_t b){
+    return a>b? a:b;
+}
+
 // Distance Sensor Stuff
 void UartSetCur(uint8_t newX, uint8_t newY)
 {
@@ -121,24 +125,17 @@ bool pollDistanceSensor(void)
   return false;
 }
 
-int BIAS = 1; // 1 = Right, 2 = Left
 
 // calibrated for 500mm track
 // right is raw sensor data from right sensor
 // return calibrated distance from center of Robot to right wall
 int32_t Right(int32_t right){
-    if (BIAS == 1)
         return  (right*(59*right + 7305) + 2348974)/32768;
-    else
-         return (1247*right)/2048 + 22;
 }
 // left is raw sensor data from left sensor
 // return calibrated distance from center of Robot to left wall
 int32_t Left(int32_t left){
-    if (BIAS == 1)
         return (1247*left)/2048 + 22;
-    else
-        return  (left*(50*left + 7305) + 2348974)/32768;
 }
 
 #define N 1024
@@ -156,105 +153,95 @@ int bumpCount = 0;
 
 // assumes track is 500mm
 int32_t Mode = 1; // 0 stop, 1 run
-int32_t Error;
+int32_t Error, LeftError, RightError;
 int32_t Ki=30;  // integral controller gain
 int32_t Kd=20;
-int32_t Prev_Error;
-int32_t Prev_Error_L;
-int32_t Prev_Error_R;
-int32_t Kp=5;  // proportional controller gain //was 4
+int32_t PrevError, PrevLeftError, PrevRightError;
+
+
+float Kpc=7.5; //proportional controller gain //was 4
+float Kpl=5;
+float Kpr=4.6; // was 3.7
+float Kdl=2.8;
+float Kdr=2; // was 1
 int32_t UR, UL;  // PWM duty 0 to 14,998
 
 
 #define TOOCLOSE 200 //was 200
-#define DESIRED 250 //was 250
+volatile int DESIRED_L=350; //was 250
+volatile int DESIRED_R=350; //was 250
 int32_t SetPoint = 250; // mm //was 250
 int32_t LeftDistance,CenterDistance,RightDistance; // mm
 #define TOOFAR 400 // was 400
+#define RIGHT 1
+#define LEFT 0
+volatile int BIAS = RIGHT; //1= right, 0 = left
+
 
 #define PWMNOMINAL 6000 // was 2500
 #define SWING 1000 //was 1000
 #define PWMMIN (PWMNOMINAL-SWING)
 #define PWMMAX (PWMNOMINAL+SWING)
-void Controller(void){ // runs at 100 Hz
-  if(Mode){
-    if((LeftDistance>DESIRED)&&(RightDistance>DESIRED)){
-      SetPoint = (LeftDistance+RightDistance)/2;
+
+uint32_t RWallDist = 100;
+uint32_t latch = 1;
+
+void Controller_New(void){
+
+    if(latch == 1){
+        Motor_Forward(6000, 6000);
+
+        if((BIAS == RIGHT) && (RightDistance < 100))latch = 0;
+        else if((BIAS == LEFT) && (LeftDistance <  100)) latch = 0;
+        return;
     }else{
-      SetPoint = DESIRED;
+
+    if((BIAS == RIGHT) && (RightDistance > max(480, DESIRED_R))) Motor_Forward(6000, 3500);
+    else if((BIAS == LEFT) && (LeftDistance > max(480, DESIRED_L))) Motor_Forward(3500, 6000);
+
+
+    else if(RightDistance > DESIRED_R || LeftDistance > DESIRED_L){
+            DESIRED_L = (RightDistance + LeftDistance)*(4/5);
+            DESIRED_R = (RightDistance + LeftDistance)/5;
+
+    RightError = RightDistance - DESIRED_R;
+    LeftError = LeftDistance - DESIRED_L;
+
+    int32_t basePWM = Kpc * CenterDistance + 4000;
+    int32_t leftProp = Kpl * (RightError);
+    int32_t rightProp = Kpr * (LeftError);
+
+    int32_t leftD = Kdl * (RightError - PrevRightError);
+    int32_t rightD = Kdr * (LeftError - PrevLeftError);
+
+
+    PrevLeftError = LeftError;
+    PrevRightError = RightError;
+
+
+    UL = basePWM + leftProp + leftD;
+    UR = basePWM + rightProp + rightD;
+
+    Motor_Forward(UL, UR);
     }
-    if(LeftDistance < RightDistance ){
-      Error = LeftDistance-SetPoint;
-    }else {
-      Error = SetPoint-RightDistance;
     }
-    // Accumulate integral term
-        static int32_t Integral = 0;
-        Integral += Error;
-
-    // Calculate control signals
-    UR = PWMNOMINAL + (Kp * Error) + Kd*(Error - Prev_Error);
-    UL = PWMNOMINAL - (Kp * Error) - Kd*(Error - Prev_Error);
-
-    Prev_Error = Error;
-//    if(UR < (PWMNOMINAL-SWING)) UR = PWMNOMINAL-SWING; // 3,000 to 7,000
-//    if(UR > (PWMNOMINAL+SWING)) UR = PWMNOMINAL+SWING;
-//    if(UL < (PWMNOMINAL-SWING)) UL = PWMNOMINAL-SWING; // 3,000 to 7,000
-//    if(UL > (PWMNOMINAL+SWING)) UL = PWMNOMINAL+SWING;
-    Motor_Forward(UL,UR);
-
-  }
-}
-
-void Controller_Right(void){ // runs at 100 Hz
-  if(Mode){
-    if((RightDistance>DESIRED)){
-      SetPoint = (RightDistance)/2;
-    }else{
-      SetPoint = DESIRED;
-    }
-    if(LeftDistance < RightDistance ){
-      Error = LeftDistance-SetPoint;
-    }else {
-      Error = SetPoint-RightDistance;
-    }
-
-    Error = SetPoint-RightDistance;
-    UR = UR + Ki*Error;      // adjust right motor
-    UR = PWMNOMINAL+Kp*Error; // proportional control
-    UR = UR + Ki*Error;      // adjust right motor
-    UL = PWMNOMINAL-Kp*Error; // proportional control
-    if(UR < (PWMNOMINAL-SWING)) UR = PWMNOMINAL-SWING; // 3,000 to 7,000
-    if(UR > (PWMNOMINAL+SWING)) UR = PWMNOMINAL+SWING;
-    if(UL < (PWMNOMINAL-SWING)) UL = PWMNOMINAL-SWING; // 3,000 to 7,000
-    if(UL > (PWMNOMINAL+SWING)) UL = PWMNOMINAL+SWING;
-
-    //turns left if the center measurement and right measurement is small enough that we will hit the wall if we don't turn
-    if((RightDistance<250) && (CenterDistance <250)){
-        UL = 0;
-        UR = PWMNOMINAL;
-    }
-
-    Motor_Forward(UL,UR);
-
-  }
 }
 
 void Pause(void){int i;
   uint8_t bumpVal = Bump_Read();
 
   for(i=5;i>0;i=i-1){
-    Clock_Delay1ms(100); LaunchPad_Output(0); // off
-    Clock_Delay1ms(100); LaunchPad_Output(2); // green
+    Clock_Delay1ms(50);LaunchPad_Output(0); // off
+    Clock_Delay1ms(50); LaunchPad_Output(2); // green
   }
   // restart Jacki
   UR = UL = PWMNOMINAL;    // reset parameters
-  if (bumpVal <= 0x02)
-      Motor_Backward(UL, 0);
-  else if (bumpVal >= 0x10)
-      Motor_Backward(0, UR);
+  if (bumpVal <= 0x04)
+      Motor_Backward(5000, 0);
+  else if (bumpVal == 0x0C)
+      Motor_Backward(5000, 5000);
   else
-      Motor_Backward(UL,UR);
+      Motor_Backward(0, 5000);
   Clock_Delay1ms(750);
   bumpCount++;
   Mode = 1;
@@ -271,9 +258,9 @@ uint32_t PlotOffset,PlotData;
  * Values for below macros shall be modified per the access-point's (AP) properties
  * SimpleLink device will connect to following AP when the application is executed
  */
-#define SSID_NAME       "NotYouriPhone"       /* Access point name to connect to. */
+#define SSID_NAME       "Oday"       /* Access point name to connect to. */
 #define SEC_TYPE        SL_SEC_TYPE_WPA_WPA2     /* Security type of the Access piont */
-#define PASSKEY         "321drowssaP"   /* Password in case of secure AP */
+#define PASSKEY         "Oday1234"   /* Password in case of secure AP */
 #define PASSKEY_LEN     pal_Strlen(PASSKEY)  /* Password length in case of secure AP */
 
 /*
@@ -288,6 +275,7 @@ uint32_t PlotOffset,PlotData;
 #define CDPUBLISH_TOPIC "grootCWall/"
 #define RDPUBLISH_TOPIC "grootRWall/"
 #define BMPPUBLISH_TOPIC "grootBump/"
+#define GOPUBLISH_TOPIC "grootGo/"
 
 // MQTT message buffer size
 #define BUFF_SIZE 32
@@ -524,8 +512,9 @@ int32_t RightSteps;                      // number of tachometer steps of right 
  */
 int main(int argc, char** argv)
 {
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0, k = 0, g = 0;
     uint32_t channel = 1;
+    BIAS = RIGHT;
     Clock_Init48MHz();
     SysTick->LOAD = 0x00FFFFFF;           // maximum reload value
     SysTick->CTRL = 0x00000005;           // enable SysTick with no interrupts
@@ -700,7 +689,9 @@ int main(int argc, char** argv)
             LOOP_FOREVER();
         }
         command = UART0_InChar();
-        if(command != '0') comm = command;
+        if(command == 'G' || command == 'S') comm = command;
+        else if(command == 'L') BIAS = LEFT;
+        else if(command == 'R') BIAS = RIGHT;
 
         if(Bump_Read()){ // collision
           Mode = 0;
@@ -715,6 +706,20 @@ int main(int argc, char** argv)
         {
             Motor_Stop();
             modeFlag = 0;
+
+            char bufG[1];
+            int m = 0;
+            ltoa (m, bufG, 10);
+            MQTTMessage msgG;
+            msgG.dup = 0;
+            msgG.id = 0;
+            msgG.payload = bufG;
+            msgG.payloadlen = 1;
+            msgG.qos = QOS0;
+            msgG.retained = 0;
+
+            rc = MQTTPublish(&hMQTTClient, GOPUBLISH_TOPIC, &msgG);
+
             uint8_t pBmp;
             char bufBmp[3];
             if (bumpCount >= 10)
@@ -732,11 +737,34 @@ int main(int argc, char** argv)
             msgBmp.retained = 0;
 
             rc = MQTTPublish(&hMQTTClient, BMPPUBLISH_TOPIC, &msgBmp);
+
             break;
         }
 
         if(comm == 'S') {Motor_Stop();}
+
         else if(comm == 'G'){
+
+
+            if(g == 0){
+                //Publish
+                char bufG[1];
+                int m = 1;
+                ltoa (m, bufG, 10);
+                MQTTMessage msgG;
+                  msgG.dup = 0;
+                  msgG.id = 0;
+                  msgG.payload = bufG;
+                  msgG.payloadlen = 1;
+                  msgG.qos = QOS0;
+                  msgG.retained = 0;
+
+                  // Sending Tachometer Values
+                  rc = MQTTPublish(&hMQTTClient, GOPUBLISH_TOPIC, &msgG);
+                g++;
+            }
+
+
             if(TxChannel <= 2){ // 0,1,2 means new data
               if(TxChannel==0){
                 if(Amplitudes[0] > 1000){
@@ -764,7 +792,7 @@ int main(int argc, char** argv)
               OPT3101_StartMeasurementChannel(channel);
               j = j + 1;
             }
-            Controller();
+            Controller_New();
             if(j >= 100){
               j = 0;
               SetCursor(3, 5);
@@ -819,7 +847,7 @@ int main(int argc, char** argv)
            OPT3101_StartMeasurementChannel(channel);
            StartTime = SysTick->VAL;
          }
-         if (k == 20)
+         if (k == 30)
          {
              uint8_t payloadL, payloadR, pLD, pCD, pRD;
              char bufL[3];
@@ -931,7 +959,7 @@ int main(int argc, char** argv)
          }
          else
              k++;
-        Delay(10);
+        //Delay(10);
     }
 }
 
