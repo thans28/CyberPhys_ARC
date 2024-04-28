@@ -6,7 +6,6 @@ A - Aggressive Profile
 L - Left Bias
 E - Center Bias
 R - Right Bias
-PROFILE CODES?
 
 
 
@@ -17,3 +16,4 @@ grootRWall/ - right distance sensor reading as string
 grootBump/ - send any type of message when the bump sensors are hit
 grootLSpeed/ - left tach reading as a string
 grootRSpeed/ - right tach reading as a string
+grootGo/ - start/stop of stopwatch
